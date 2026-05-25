@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>WhatTime Is It?</title>
+
+<meta name="description" content="A slightly judgemental world clock with live times, travel humour, and international chaos.">
+
+<link rel="stylesheet" href="styles.css">
+
+<style>
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:linear-gradient(90deg,#b79a4a,#17294f);
+color:#111827;
+}
+
+.page{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.topnav{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.brand{
+font-size:32px;
+font-weight:700;
+color:white;
+text-decoration:none;
+}
+
+.navlinks{
+display:flex;
+gap:12px;
+flex-wrap:wrap;
+}
+
+.navlinks a{
+background:rgba(255,255,255,0.2);
+padding:10px 16px;
+border-radius:999px;
+text-decoration:none;
+color:white;
+font-weight:600;
+}
+
+.hero-grid{
+display:grid;
+grid-template-columns:1.2fr 0.8fr;
+gap:20px;
+}
+
+.hero-card,
+.time-panel{
+background:#f3f4f6;
+border-radius:28px;
+padding:40px;
+}
+
+.eyebrow{
+display:inline-block;
+background:#ead9a1;
+padding:10px 16px;
+border-radius:999px;
+font-weight:700;
+margin-bottom:20px;
+}
+
+h1{
+font-size:90px;
+line-height:0.9;
+margin:0 0 20px;
+font-weight:900;
+}
+
+.intro{
+font-size:18px;
+line-height:1.7;
+color:#475569;
+}
+
+.panel-label{
+font-size:22px;
+font-weight:700;
+letter-spacing:2px;
+color:#64748b;
+margin-bottom:30px;
+}
+
+.main-clock{
+font-size:92px;
+font-weight:900;
+margin-bottom:20px;
+}
+
+.main-caption{
+font-size:18px;
+line-height:1.6;
+color:#475569;
+}
+
+.controls{
+display:flex;
+gap:12px;
+margin:20px 0;
+flex-wrap:wrap;
+}
+
+.controls button,
+.controls select{
+padding:14px 18px;
+border-radius:999px;
+border:none;
+font-weight:700;
+font-size:16px;
+}
+
+.controls button{
+background:#f2c94c;
+cursor:pointer;
+}
+
+.city-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:16px;
+margin-top:20px;
+}
+
+.city-card{
+background:#f3f4f6;
+border-radius:24px;
+padding:20px;
+}
+
+.city-card h3{
+margin-top:0;
+font-size:32px;
+}
+
+.city-time{
+font-size:48px;
+font-weight:900;
+margin:10px 0;
+}
+
+.city-caption{
+color:#475569;
+line-height:1.5;
+}
+
+footer{
+margin-top:40px;
+padding:20px 0;
+color:white;
+}
+
+footer a{
+color:white;
+}
+
+@media(max-width:900px){
+
+.hero-grid{
+grid-template-columns:1fr;
+}
+
+h1{
+font-size:60px;
+}
+
+.main-clock{
+font-size:64px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<main class="page">
+
+<nav class="topnav">
+
+<a class="brand" href="index.html">
+🌍 WhatTime Is It?
+</a>
+
+<div class="navlinks">
+<a href="index.html">Clock</a>
+<a href="about.html">About</a>
+<a href="travel-gadgets.html">Travel gadgets</a>
+<a href="jet-lag.html">Jet lag guide</a>
+<a href="affiliate-disclosure.html">Affiliate disclosure</a>
+<a href="privacy.html">Privacy</a>
+</div>
+
+</nav>
+
+<section class="hero-grid">
+
+<div class="hero-card">
+
+<div class="eyebrow">
+🌍 WhatTime Is It?
+</div>
+
+<h1>
+The world is not doing the same thing as you.
+</h1>
+
+<p class="intro">
+A slightly judgemental world clock. It detects your local time automatically, then compares it with the rest of the planet, where someone is already having breakfast, regretting lunch, or sending emails with unnecessary confidence.
+</p>
+
+</div>
+
+<div class="time-panel">
+
+<div class="panel-label">
+LONDON TIME NOW
+</div>
+
+<div id="main-clock" class="main-clock">
+00:00:00
+</div>
+
+<p class="main-caption">
+In London, you are eating, meeting, laughing, or inspecting the fridge again.
+</p>
+
+</div>
+
+</section>
+
+<div class="controls">
+
+<button>
+Shuffle the planet
+</button>
+
+<button>
+Switch to 12-hour time
+</button>
+
+<select>
+<option>Show everyone</option>
+</select>
+
+</div>
+
+<section class="city-grid">
+
+<div class="city-card">
+<h3>London</h3>
+<div class="city-time" id="londonTime">00:00:00</div>
+<p class="city-caption">
+In London, they are eating, meeting, laughing, or inspecting the fridge again.
+</p>
+</div>
+
+<div class="city-card">
+<h3>Tokyo</h3>
+<div class="city-time" id="tokyoTime">00:00:00</div>
+<p class="city-caption">
+In Tokyo, they are probably asleep unless they made poor streaming choices.
+</p>
+</div>
+
+<div class="city-card">
+<h3>New York</h3>
+<div class="city-time" id="newyorkTime">00:00:00</div>
+<p class="city-caption">
+In New York, they are negotiating with the clock.
+</p>
+</div>
+
+</section>
+
+<footer>
+© WhatTime Is It? |
+<a href="privacy.html">Privacy</a> |
+<a href="affiliate-disclosure.html">Affiliate disclosure</a>
+</footer>
+
+</main>
+
+<script>
+
+function updateClock(){
+
+const london = new Date().toLocaleTimeString('en-GB',{
+timeZone:'Europe/London',
+hour12:false
+});
+
+const tokyo = new Date().toLocaleTimeString('en-GB',{
+timeZone:'Asia/Tokyo',
+hour12:false
+});
+
+const newyork = new Date().toLocaleTimeString('en-GB',{
+timeZone:'America/New_York',
+hour12:false
+});
+
+document.getElementById('main-clock').innerText = london;
+document.getElementById('londonTime').innerText = london;
+document.getElementById('tokyoTime').innerText = tokyo;
+document.getElementById('newyorkTime').innerText = newyork;
+
+}
+
+updateClock();
+
+setInterval(updateClock,1000);
+
+</script>
+
+</body>
+</html>
