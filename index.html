@@ -1,336 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhoAmI — Anonymous ID Certificate</title>
 
-<title>WhatTime Is It?</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<meta name="description" content="A slightly judgemental world clock with live times, travel humour, and international chaos.">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #111827, #1e3a8a, #0f766e);
+      color: white;
+      text-align: center;
+    }
 
-<link rel="stylesheet" href="styles.css">
+    header {
+      padding: 50px 20px 30px;
+    }
 
-<style>
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
 
-body{
-margin:0;
-font-family:Arial,sans-serif;
-background:linear-gradient(90deg,#b79a4a,#17294f);
-color:#111827;
-}
+    .tagline {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
 
-.page{
-max-width:1200px;
-margin:auto;
-padding:20px;
-}
+    .box {
+      background: white;
+      color: #111827;
+      max-width: 650px;
+      margin: 30px auto;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
 
-.topnav{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:20px;
-flex-wrap:wrap;
-gap:10px;
-}
+    button {
+      background: #0f766e;
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      font-size: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+    }
 
-.brand{
-font-size:32px;
-font-weight:700;
-color:white;
-text-decoration:none;
-}
+    button:hover {
+      background: #115e59;
+    }
 
-.navlinks{
-display:flex;
-gap:12px;
-flex-wrap:wrap;
-}
+    #whoamiId {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 20px 0;
+      letter-spacing: 2px;
+    }
 
-.navlinks a{
-background:rgba(255,255,255,0.2);
-padding:10px 16px;
-border-radius:999px;
-text-decoration:none;
-color:white;
-font-weight:600;
-}
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 20px;
+    }
 
-.hero-grid{
-display:grid;
-grid-template-columns:1.2fr 0.8fr;
-gap:20px;
-}
+    .certificate {
+      border: 3px solid #111827;
+      padding: 25px;
+      margin-top: 20px;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
 
-.hero-card,
-.time-panel{
-background:#f3f4f6;
-border-radius:28px;
-padding:40px;
-}
+    .levels {
+      text-align: left;
+      max-width: 500px;
+      margin: 20px auto;
+      line-height: 1.7;
+    }
 
-.eyebrow{
-display:inline-block;
-background:#ead9a1;
-padding:10px 16px;
-border-radius:999px;
-font-weight:700;
-margin-bottom:20px;
-}
+    section {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
 
-h1{
-font-size:90px;
-line-height:0.9;
-margin:0 0 20px;
-font-weight:900;
-}
+    footer {
+      padding: 30px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
 
-.intro{
-font-size:18px;
-line-height:1.7;
-color:#475569;
-}
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
 
-.panel-label{
-font-size:22px;
-font-weight:700;
-letter-spacing:2px;
-color:#64748b;
-margin-bottom:30px;
-}
+      header, section, footer, .no-print {
+        display: none;
+      }
 
-.main-clock{
-font-size:92px;
-font-weight:900;
-margin-bottom:20px;
-}
-
-.main-caption{
-font-size:18px;
-line-height:1.6;
-color:#475569;
-}
-
-.controls{
-display:flex;
-gap:12px;
-margin:20px 0;
-flex-wrap:wrap;
-}
-
-.controls button,
-.controls select{
-padding:14px 18px;
-border-radius:999px;
-border:none;
-font-weight:700;
-font-size:16px;
-}
-
-.controls button{
-background:#f2c94c;
-cursor:pointer;
-}
-
-.city-grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:16px;
-margin-top:20px;
-}
-
-.city-card{
-background:#f3f4f6;
-border-radius:24px;
-padding:20px;
-}
-
-.city-card h3{
-margin-top:0;
-font-size:32px;
-}
-
-.city-time{
-font-size:48px;
-font-weight:900;
-margin:10px 0;
-}
-
-.city-caption{
-color:#475569;
-line-height:1.5;
-}
-
-footer{
-margin-top:40px;
-padding:20px 0;
-color:white;
-}
-
-footer a{
-color:white;
-}
-
-@media(max-width:900px){
-
-.hero-grid{
-grid-template-columns:1fr;
-}
-
-h1{
-font-size:60px;
-}
-
-.main-clock{
-font-size:64px;
-}
-
-}
-
-</style>
-
+      .box {
+        box-shadow: none;
+        margin: 0;
+        max-width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<main class="page">
+  <header>
+    <h1>WhoAmI</h1>
+    <p class="tagline">Your friendly anonymous identity certificate.</p>
+  </header>
 
-<nav class="topnav">
+  <div class="box">
+    <h2>Generate Your Anonymous ID</h2>
+    <p>Click below to create a simple anonymous WhoAmI identity.</p>
 
-<a class="brand" href="index.html">
-🌍 WhatTime Is It?
-</a>
+    <button class="no-print" onclick="generateID()">Generate WhoAmI ID</button>
 
-<div class="navlinks">
-<a href="index.html">Clock</a>
-<a href="about.html">About</a>
-<a href="travel-gadgets.html">Travel gadgets</a>
-<a href="jet-lag.html">Jet lag guide</a>
-<a href="affiliate-disclosure.html">Affiliate disclosure</a>
-<a href="privacy.html">Privacy</a>
-</div>
+    <div class="certificate">
+      <h2>WhoAmI Certificate</h2>
+      <p>This certifies that the holder is known anonymously as:</p>
 
-</nav>
+      <div id="whoamiId">WHOAMI-000000</div>
 
-<section class="hero-grid">
+      <p><strong>Proof Level:</strong> Level 1 — Self-certified</p>
 
-<div class="hero-card">
+      <div id="qrcode"></div>
 
-<div class="eyebrow">
-🌍 WhatTime Is It?
-</div>
+      <p>This certificate does not reveal your real name.</p>
+      <p>It simply says: “I exist, probably.”</p>
+    </div>
 
-<h1>
-The world is not doing the same thing as you.
-</h1>
+    <button class="no-print" onclick="window.print()">Print / Save Certificate</button>
+  </div>
 
-<p class="intro">
-A slightly judgemental world clock. It detects your local time automatically, then compares it with the rest of the planet, where someone is already having breakfast, regretting lunch, or sending emails with unnecessary confidence.
-</p>
+  <section>
+    <h2>What is WhoAmI?</h2>
+    <p>
+      WhoAmI is a simple anonymous identity idea. You can create a unique ID,
+      print it, save it, or share it using a QR code.
+    </p>
+    <p>
+      It can be used for fun, introductions, luggage labels, anonymous contact cards,
+      family history pages, memorial pages, or future verified profiles.
+    </p>
+  </section>
 
-</div>
+  <section>
+    <h2>Proof Levels</h2>
+    <div class="levels">
+      <p><strong>Level 1:</strong> Self-certified — you say you are you.</p>
+      <p><strong>Level 2:</strong> Witnessed — someone else confirms they know you.</p>
+      <p><strong>Level 3:</strong> Verified — stronger identity checks may be added later.</p>
+    </div>
+  </section>
 
-<div class="time-panel">
+  <section>
+    <h2>Privacy</h2>
+    <p>
+      This first version does not store personal information. The ID is generated
+      in your browser. No account is required.
+    </p>
+  </section>
 
-<div class="panel-label">
-LONDON TIME NOW
-</div>
+  <section>
+    <h2>Contact</h2>
+    <p>
+      This is an early experimental version of WhoAmI.
+    </p>
+    <p>
+      Future versions may include profiles, QR contact pages, printed cards,
+      luggage tags and verified identity options.
+    </p>
+  </section>
 
-<div id="main-clock" class="main-clock">
-00:00:00
-</div>
+  <footer>
+    WhoAmI © 2026 — Anonymous, but not entirely pointless.
+  </footer>
 
-<p class="main-caption">
-In London, you are eating, meeting, laughing, or inspecting the fridge again.
-</p>
+  <script>
+    let qr;
 
-</div>
+    function generateID() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let id = "WHOAMI-";
 
-</section>
+      for (let i = 0; i < 6; i++) {
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
 
-<div class="controls">
+      document.getElementById("whoamiId").textContent = id;
 
-<button>
-Shuffle the planet
-</button>
+      const qrText = window.location.href.split("#")[0] + "#" + id;
 
-<button>
-Switch to 12-hour time
-</button>
+      document.getElementById("qrcode").innerHTML = "";
 
-<select>
-<option>Show everyone</option>
-</select>
+      qr = new QRCode(document.getElementById("qrcode"), {
+        text: qrText,
+        width: 160,
+        height: 160
+      });
+    }
 
-</div>
-
-<section class="city-grid">
-
-<div class="city-card">
-<h3>London</h3>
-<div class="city-time" id="londonTime">00:00:00</div>
-<p class="city-caption">
-In London, they are eating, meeting, laughing, or inspecting the fridge again.
-</p>
-</div>
-
-<div class="city-card">
-<h3>Tokyo</h3>
-<div class="city-time" id="tokyoTime">00:00:00</div>
-<p class="city-caption">
-In Tokyo, they are probably asleep unless they made poor streaming choices.
-</p>
-</div>
-
-<div class="city-card">
-<h3>New York</h3>
-<div class="city-time" id="newyorkTime">00:00:00</div>
-<p class="city-caption">
-In New York, they are negotiating with the clock.
-</p>
-</div>
-
-</section>
-
-<footer>
-© WhatTime Is It? |
-<a href="privacy.html">Privacy</a> |
-<a href="affiliate-disclosure.html">Affiliate disclosure</a>
-</footer>
-
-</main>
-
-<script>
-
-function updateClock(){
-
-const london = new Date().toLocaleTimeString('en-GB',{
-timeZone:'Europe/London',
-hour12:false
-});
-
-const tokyo = new Date().toLocaleTimeString('en-GB',{
-timeZone:'Asia/Tokyo',
-hour12:false
-});
-
-const newyork = new Date().toLocaleTimeString('en-GB',{
-timeZone:'America/New_York',
-hour12:false
-});
-
-document.getElementById('main-clock').innerText = london;
-document.getElementById('londonTime').innerText = london;
-document.getElementById('tokyoTime').innerText = tokyo;
-document.getElementById('newyorkTime').innerText = newyork;
-
-}
-
-updateClock();
-
-setInterval(updateClock,1000);
-
-</script>
+    generateID();
+  </script>
 
 </body>
 </html>
