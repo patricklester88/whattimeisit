@@ -577,20 +577,29 @@
       <div class="calculator-grid">
         <div>
           <h2>Time calculator</h2>
-          <p>Enter one date and time where you are. It converts that exact moment into another city or time zone, defaulting to somewhere about 8 hours behind you.</p>
+          <p>Enter one date and time in any city or time zone. It converts that exact moment into another searchable place, defaulting to somewhere about 8 hours behind the source.</p>
 
           <div class="calculator-field">
-            <label for="calcDateTime">Date and time where you are</label>
+            <label for="calcDateTime">Date and time</label>
             <input id="calcDateTime" type="datetime-local" />
+          </div>
+
+          <div class="calculator-field">
+            <label for="calcSourceSearch">Where this date and time is</label>
+            <div class="search-row">
+              <input id="calcSourceSearch" list="mainZoneOptions" type="search" placeholder="Default: your detected time zone. Try London, Tokyo or UTC+5:45" autocomplete="off" />
+              <button id="calcSourceSearchBtn" type="button">Set from</button>
+            </div>
+            <div id="calcSourceNote" class="search-note">The source defaults to your detected device time zone.</div>
           </div>
 
           <div class="calculator-field">
             <label for="calcSearch">Convert to city or time zone</label>
             <div class="search-row">
-              <input id="calcSearch" list="mainZoneOptions" type="search" placeholder="Default: about 8 hours behind. Try Los Angeles or UTC−8" autocomplete="off" />
-              <button id="calcSearchBtn" type="button">Set place</button>
+              <input id="calcSearch" list="mainZoneOptions" type="search" placeholder="Default: about 8 hours behind the source. Try Los Angeles or UTC−8" autocomplete="off" />
+              <button id="calcSearchBtn" type="button">Set to</button>
             </div>
-            <div id="calcNote" class="search-note">The target defaults to a time zone about 8 hours behind your detected location.</div>
+            <div id="calcNote" class="search-note">The target defaults to a time zone about 8 hours behind the source time zone.</div>
           </div>
 
           <div class="calculator-actions">
@@ -603,7 +612,7 @@
           <div id="calcResultLabel" class="mini-label">Converted time</div>
           <div id="calcResultTime" class="result-time">--:--</div>
           <div id="calcResultDate" class="result-date">Choose a time to convert.</div>
-          <p id="calcResultNote" class="result-note">This calculator treats the entered date and time as your device’s local time.</p>
+          <p id="calcResultNote" class="result-note">Choose the place where the date/time starts, then choose where it should be converted to.</p>
         </div>
       </div>
     </section>
@@ -703,6 +712,8 @@
     };
     let comparePlace = null;
     let compareIsDefaultBehind = true;
+    let calcSourcePlace = null;
+    let calcSourceIsDeviceDefault = true;
     let calcTargetPlace = null;
     let calcTargetIsDefaultBehind = true;
 
@@ -777,16 +788,16 @@
       return value;
     }
 
-    function pickDefaultComparePlace(now = new Date()){
-      let localOffset = 0;
-      try { localOffset = getOffsetMinutes(now, localZone); }
-      catch(error) { localOffset = getOffsetMinutes(now, 'Europe/London'); }
-      const targetOffset = normaliseOffsetRange(localOffset - 480);
+    function pickDefaultComparePlace(now = new Date(), baseZone = localZone){
+      let baseOffset = 0;
+      try { baseOffset = getOffsetMinutes(now, baseZone); }
+      catch(error) { baseOffset = getOffsetMinutes(now, 'Europe/London'); }
+      const targetOffset = normaliseOffsetRange(baseOffset - 480);
 
       let best = null;
       let bestDiff = Infinity;
       for(const place of mainSearchPlaces){
-        if(place.zone === localZone) continue;
+        if(place.zone === baseZone) continue;
         let offset;
         try { offset = getOffsetMinutes(now, place.zone); }
         catch(error) { continue; }
@@ -839,13 +850,47 @@
       return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
     }
 
-    function parseDatetimeLocal(value){
+    function toDatetimeLocalValueInZone(date, timeZone){
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit',
+        hourCycle:'h23'
+      }).formatToParts(date);
+      const get = type => parts.find(part => part.type === type)?.value || '00';
+      return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+    }
+
+    function parseDatetimeLocalParts(value){
       if(!value) return null;
       const [datePart, timePart = '00:00'] = value.split('T');
       const [year, month, day] = datePart.split('-').map(Number);
       const [hour = 0, minute = 0] = timePart.split(':').map(Number);
       if(!year || !month || !day || Number.isNaN(hour) || Number.isNaN(minute)) return null;
-      return new Date(year, month - 1, day, hour, minute, 0, 0);
+      return { year, month, day, hour, minute };
+    }
+
+    function parseDatetimeLocal(value){
+      const parts = parseDatetimeLocalParts(value);
+      if(!parts) return null;
+      return new Date(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
+    }
+
+    function wallTimeToInstant(value, timeZone){
+      const parts = parseDatetimeLocalParts(value);
+      if(!parts) return null;
+      const wallAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, 0, 0);
+      let guess = wallAsUtc;
+      for(let i = 0; i < 4; i++){
+        const offset = getOffsetMinutes(new Date(guess), timeZone);
+        const nextGuess = wallAsUtc - offset * 60000;
+        if(Math.abs(nextGuess - guess) < 1000) {
+          guess = nextGuess;
+          break;
+        }
+        guess = nextGuess;
+      }
+      return new Date(guess);
     }
 
     function formatConvertedTime(date, timeZone){
@@ -871,22 +916,69 @@
       }).format(date);
     }
 
+    function ensureCalculatorSource(now = new Date()){
+      if(!calcSourcePlace){
+        calcSourcePlace = localPlace;
+        calcSourceIsDeviceDefault = true;
+        const sourceInput = document.getElementById('calcSourceSearch');
+        const sourceNote = document.getElementById('calcSourceNote');
+        const label = calcSourcePlace.name === 'Your location' ? calcSourcePlace.zone : calcSourcePlace.name;
+        if(sourceInput && !sourceInput.value) sourceInput.value = label;
+        if(sourceNote) {
+          const offset = offsetLabel(getOffsetMinutes(now, calcSourcePlace.zone));
+          sourceNote.textContent = `Source default: ${label} (${offset}), detected from this device.`;
+        }
+      }
+      return calcSourcePlace;
+    }
+
     function setCalculatorToNow(){
       const input = document.getElementById('calcDateTime');
       if(!input) return;
+      const source = ensureCalculatorSource(new Date());
       const now = new Date();
       now.setSeconds(0, 0);
-      input.value = toDatetimeLocalValue(now);
+      input.value = toDatetimeLocalValueInZone(now, source.zone);
     }
 
     function ensureCalculatorTarget(now = new Date()){
+      const source = ensureCalculatorSource(now);
       if(!calcTargetPlace){
-        calcTargetPlace = pickDefaultComparePlace(now);
+        calcTargetPlace = pickDefaultComparePlace(now, source.zone);
         calcTargetIsDefaultBehind = true;
         const calcSearch = document.getElementById('calcSearch');
+        const calcNote = document.getElementById('calcNote');
         if(calcSearch && !calcSearch.value) calcSearch.value = calcTargetPlace.name;
+        if(calcNote){
+          const offset = offsetLabel(getOffsetMinutes(now, calcTargetPlace.zone));
+          calcNote.textContent = `Target default: ${calcTargetPlace.name}, ${calcTargetPlace.country} (${offset}), about 8 hours behind the source.`;
+        }
       }
       return calcTargetPlace;
+    }
+
+    function chooseCalculatorSource(rawValue){
+      const match = findPlaceByQuery(rawValue);
+      if(!match){
+        document.getElementById('calcSourceNote').textContent = 'No match yet. Try a city name, IANA zone like Europe/London, or UTC offset like UTC+1.';
+        return false;
+      }
+      const referenceInstant = wallTimeToInstant(document.getElementById('calcDateTime').value, match.zone) || new Date();
+      calcSourcePlace = match;
+      calcSourceIsDeviceDefault = false;
+      const offset = offsetLabel(getOffsetMinutes(referenceInstant, match.zone));
+      document.getElementById('calcSourceSearch').value = match.name;
+      document.getElementById('calcSourceNote').textContent = `Calculator source: ${match.name}, ${match.country} (${offset}).`;
+
+      if(calcTargetIsDefaultBehind){
+        calcTargetPlace = pickDefaultComparePlace(referenceInstant, calcSourcePlace.zone);
+        const targetOffset = offsetLabel(getOffsetMinutes(referenceInstant, calcTargetPlace.zone));
+        document.getElementById('calcSearch').value = calcTargetPlace.name;
+        document.getElementById('calcNote').textContent = `Target default reset: ${calcTargetPlace.name}, ${calcTargetPlace.country} (${targetOffset}), about 8 hours behind ${match.name}.`;
+      }
+
+      updateCalculator();
+      return true;
     }
 
     function chooseCalculatorTarget(rawValue){
@@ -895,10 +987,11 @@
         document.getElementById('calcNote').textContent = 'No match yet. Try a city name, IANA zone like America/Los_Angeles, or UTC offset like UTC-8.';
         return false;
       }
-      const now = new Date();
+      const source = ensureCalculatorSource(new Date());
+      const referenceInstant = wallTimeToInstant(document.getElementById('calcDateTime').value, source.zone) || new Date();
       calcTargetPlace = match;
       calcTargetIsDefaultBehind = false;
-      const offset = offsetLabel(getOffsetMinutes(now, match.zone));
+      const offset = offsetLabel(getOffsetMinutes(referenceInstant, match.zone));
       document.getElementById('calcSearch').value = match.name;
       document.getElementById('calcNote').textContent = `Calculator target: ${match.name}, ${match.country} (${offset}).`;
       updateCalculator();
@@ -913,21 +1006,24 @@
       const resultNote = document.getElementById('calcResultNote');
       if(!input || !resultTime || !resultDate || !resultLabel || !resultNote) return;
 
-      const localDate = parseDatetimeLocal(input.value);
-      const target = ensureCalculatorTarget(localDate || new Date());
-      if(!localDate){
+      const source = ensureCalculatorSource(new Date());
+      const instant = wallTimeToInstant(input.value, source.zone);
+      const target = ensureCalculatorTarget(instant || new Date());
+
+      if(!instant){
         resultTime.textContent = '--:--';
         resultDate.textContent = 'Enter a date and time first.';
-        resultNote.textContent = 'This calculator treats the entered date and time as your device’s local time.';
+        resultNote.textContent = 'Choose the place where the date/time starts, then choose where it should be converted to.';
         return;
       }
 
-      const sourceLabel = localPlace.name === 'Your location' ? localZone : localPlace.name;
-      const targetOffset = offsetLabel(getOffsetMinutes(localDate, target.zone));
+      const sourceLabel = source.name === 'Your location' ? source.zone : source.name;
+      const sourceOffset = offsetLabel(getOffsetMinutes(instant, source.zone));
+      const targetOffset = offsetLabel(getOffsetMinutes(instant, target.zone));
       resultLabel.textContent = calcTargetIsDefaultBehind ? 'Converted time · about 8 hours behind' : `Converted time · ${target.name}`;
-      resultTime.textContent = formatConvertedTime(localDate, target.zone);
-      resultDate.textContent = `${target.name}: ${formatConvertedDate(localDate, target.zone)}`;
-      resultNote.textContent = `${input.value.replace('T', ' ')} in ${sourceLabel} converts to ${target.name}, ${target.country} (${targetOffset}). Time zones are rude, but at least this bit is calculated.`;
+      resultTime.textContent = formatConvertedTime(instant, target.zone);
+      resultDate.textContent = `${target.name}: ${formatConvertedDate(instant, target.zone)}`;
+      resultNote.textContent = `${input.value.replace('T', ' ')} in ${sourceLabel} (${sourceOffset}) converts to ${target.name}, ${target.country} (${targetOffset}). Time zones are rude, but at least this bit is calculated.`;
     }
 
     const captions = {
@@ -1126,6 +1222,21 @@
 
     document.getElementById('mainSearch').addEventListener('change', event => {
       chooseComparePlace(event.currentTarget.value);
+    });
+
+    document.getElementById('calcSourceSearchBtn').addEventListener('click', () => {
+      chooseCalculatorSource(document.getElementById('calcSourceSearch').value);
+    });
+
+    document.getElementById('calcSourceSearch').addEventListener('keydown', event => {
+      if(event.key === 'Enter') {
+        event.preventDefault();
+        chooseCalculatorSource(event.currentTarget.value);
+      }
+    });
+
+    document.getElementById('calcSourceSearch').addEventListener('change', event => {
+      chooseCalculatorSource(event.currentTarget.value);
     });
 
     document.getElementById('calcSearchBtn').addEventListener('click', () => {
