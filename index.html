@@ -82,6 +82,44 @@
       min-height:300px;
     }
     .time-panel{overflow:hidden;}
+    .time-stack{
+      display:grid;
+      gap:22px;
+    }
+    .compare-box{
+      margin-top:8px;
+      padding:18px;
+      border-radius:24px;
+      background:rgba(17,27,51,.055);
+      border:1px solid rgba(17,27,51,.08);
+    }
+    .compare-label{
+      color:#6b7280;
+      font-size:12px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-weight:950;
+      margin-bottom:10px;
+    }
+    .compare-clock{
+      font-size:clamp(34px,4.3vw,54px);
+      line-height:1;
+      letter-spacing:-.06em;
+      font-weight:950;
+      margin:0 0 10px;
+      color:#111827;
+      white-space:nowrap;
+      max-width:100%;
+      overflow:hidden;
+      font-variant-numeric:tabular-nums;
+    }
+    .compare-caption{
+      font-size:15px;
+      line-height:1.45;
+      color:#536174;
+      margin:0;
+      font-weight:750;
+    }
     .eyebrow{
       display:inline-flex;
       align-items:center;
@@ -139,6 +177,64 @@
       margin:0;
       font-weight:650;
     }
+    .main-search{
+      margin-top:24px;
+      padding:16px;
+      border-radius:22px;
+      background:rgba(17,27,51,.06);
+      border:1px solid rgba(17,27,51,.08);
+    }
+    .main-search label{
+      display:block;
+      color:#536174;
+      font-size:13px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-weight:950;
+      margin-bottom:10px;
+    }
+    .search-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    .main-search input{
+      width:100%;
+      min-width:0;
+      border:1px solid rgba(17,27,51,.18);
+      border-radius:999px;
+      padding:14px 16px;
+      font-size:16px;
+      font-weight:800;
+      color:#172033;
+      background:rgba(255,255,255,.94);
+      outline:none;
+    }
+    .main-search input:focus{
+      border-color:rgba(244,200,77,.95);
+      box-shadow:0 0 0 4px rgba(244,200,77,.22);
+    }
+    .main-search button{
+      border:none;
+      border-radius:999px;
+      padding:14px 16px;
+      min-height:48px;
+      font-weight:950;
+      font-size:15px;
+      background:var(--yellow);
+      color:#182033;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .search-note{
+      margin-top:10px;
+      color:#64748b;
+      font-size:13px;
+      line-height:1.4;
+      font-weight:800;
+    }
+
     .controls{
       display:flex;
       gap:12px;
@@ -295,7 +391,10 @@
       .controls select,.controls a{grid-column:1/-1;width:100%}
       .city-grid{grid-template-columns:1fr;gap:14px}
       .city-card{min-height:0;padding:20px;border-radius:22px}
-      .main-clock{font-size:clamp(44px,15vw,58px)}
+      .main-clock{font-size:clamp(48px,17vw,64px)}
+      .compare-clock{font-size:clamp(34px,12vw,46px)}
+      .search-row{grid-template-columns:1fr}
+      .main-search button{width:100%}
       .city-time{font-size:clamp(38px,13vw,46px)}
     }
   </style>
@@ -321,9 +420,28 @@
         <p class="intro">A slightly judgemental world clock. It detects your local time automatically, then compares it with the rest of the planet, where someone is already having breakfast, regretting lunch, or sending emails with unnecessary confidence.</p>
       </div>
       <div class="time-panel">
-        <div class="panel-label">London time now</div>
-        <div id="main-clock" class="main-clock">--:--:--</div>
-        <p id="main-caption" class="main-caption">London is trying to decide whether this counts as morning, work, or a minor scheduling incident.</p>
+        <div class="time-stack">
+          <section class="local-time-box" aria-label="Your detected local time">
+            <div id="local-label" class="panel-label">Your time now</div>
+            <div id="local-clock" class="main-clock">--:--:--</div>
+            <p id="local-caption" class="main-caption">Detecting your time zone and judging it gently.</p>
+          </section>
+
+          <section class="compare-box" aria-label="Searchable comparison time">
+            <div id="compare-label" class="compare-label">8 hours behind you</div>
+            <div id="compare-clock" class="compare-clock">--:--:--</div>
+            <p id="compare-caption" class="compare-caption">A comparison clock will appear here, probably looking smug.</p>
+            <div class="main-search">
+              <label for="mainSearch">Compare with a city or time zone</label>
+              <div class="search-row">
+                <input id="mainSearch" list="mainZoneOptions" type="search" placeholder="Search Tokyo, Kathmandu or UTC+5:45" autocomplete="off" />
+                <button id="mainSearchBtn" type="button">Show time</button>
+              </div>
+              <datalist id="mainZoneOptions"></datalist>
+              <div id="mainSearchNote" class="search-note">Defaulting to somewhere about 8 hours behind you. Try Los Angeles, Tokyo, UTC−5 or Nepal.</div>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
 
@@ -381,6 +499,174 @@
       { name:'Honolulu', country:'United States', zone:'Pacific/Honolulu' },
       { name:'Kiritimati', country:'Kiribati', zone:'Pacific/Kiritimati' }
     ];
+
+
+
+    const extraMainPlaces = [
+      { name:'Baker Island', country:'US Minor Outlying Islands', zone:'Etc/GMT+12' },
+      { name:'Pago Pago', country:'American Samoa', zone:'Pacific/Pago_Pago' },
+      { name:'Taiohae', country:'Marquesas Islands', zone:'Pacific/Marquesas' },
+      { name:'Gambier Islands', country:'French Polynesia', zone:'Pacific/Gambier' },
+      { name:'Adak', country:'Alaska, United States', zone:'America/Adak' },
+      { name:'Anchorage', country:'Alaska, United States', zone:'America/Anchorage' },
+      { name:'Phoenix', country:'United States', zone:'America/Phoenix' },
+      { name:'Denver', country:'United States', zone:'America/Denver' },
+      { name:'Guatemala City', country:'Guatemala', zone:'America/Guatemala' },
+      { name:'Chicago', country:'United States', zone:'America/Chicago' },
+      { name:'Bogotá', country:'Colombia', zone:'America/Bogota' },
+      { name:'Bridgetown', country:'Barbados', zone:'America/Barbados' },
+      { name:'Halifax', country:'Canada', zone:'America/Halifax' },
+      { name:'St. John’s', country:'Canada', zone:'America/St_Johns' },
+      { name:'Buenos Aires', country:'Argentina', zone:'America/Argentina/Buenos_Aires' },
+      { name:'Fernando de Noronha', country:'Brazil', zone:'America/Noronha' },
+      { name:'King Edward Point', country:'South Georgia', zone:'Atlantic/South_Georgia' },
+      { name:'Praia', country:'Cabo Verde', zone:'Atlantic/Cape_Verde' },
+      { name:'Ponta Delgada', country:'Azores', zone:'Atlantic/Azores' },
+      { name:'Accra', country:'Ghana', zone:'Africa/Accra' },
+      { name:'Brussels', country:'Belgium', zone:'Europe/Brussels' },
+      { name:'Athens', country:'Greece', zone:'Europe/Athens' },
+      { name:'Cairo', country:'Egypt', zone:'Africa/Cairo' },
+      { name:'Tehran', country:'Iran', zone:'Asia/Tehran' },
+      { name:'Kabul', country:'Afghanistan', zone:'Asia/Kabul' },
+      { name:'Tashkent', country:'Uzbekistan', zone:'Asia/Tashkent' },
+      { name:'Dhaka', country:'Bangladesh', zone:'Asia/Dhaka' },
+      { name:'Yangon', country:'Myanmar', zone:'Asia/Yangon' },
+      { name:'Jakarta', country:'Indonesia', zone:'Asia/Jakarta' },
+      { name:'Eucla', country:'Australia', zone:'Australia/Eucla' },
+      { name:'Darwin', country:'Australia', zone:'Australia/Darwin' },
+      { name:'Adelaide', country:'Australia', zone:'Australia/Adelaide' },
+      { name:'Brisbane', country:'Australia', zone:'Australia/Brisbane' },
+      { name:'Lord Howe Island', country:'Australia', zone:'Australia/Lord_Howe' },
+      { name:'Honiara', country:'Solomon Islands', zone:'Pacific/Guadalcanal' },
+      { name:'Norfolk Island', country:'Australia', zone:'Pacific/Norfolk' },
+      { name:'Anadyr', country:'Russia', zone:'Asia/Anadyr' },
+      { name:'Chatham Islands', country:'New Zealand', zone:'Pacific/Chatham' },
+      { name:'Nuku’alofa', country:'Tonga', zone:'Pacific/Tongatapu' }
+    ];
+
+    const mainSearchPlaces = [...new Map([...cities, ...extraMainPlaces].map(place => [place.zone, place])).values()];
+    const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
+    const localPlace = mainSearchPlaces.find(place => place.zone === localZone) || {
+      name:'Your location',
+      country:'Detected from this device',
+      zone:localZone
+    };
+    let comparePlace = null;
+    let compareIsDefaultBehind = true;
+
+    function escapeHtml(value){
+      return String(value).replace(/[&<>\"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]));
+    }
+
+    function normalizeSearch(value){
+      return String(value || '')
+        .toLowerCase()
+        .replace(/−/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function getOffsetMinutes(date, timeZone){
+      const safeDate = new Date(Math.floor(date.getTime() / 1000) * 1000);
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', second:'2-digit',
+        hourCycle:'h23'
+      }).formatToParts(safeDate);
+      const get = type => Number(parts.find(part => part.type === type)?.value || 0);
+      const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+      return Math.round((asUtc - safeDate.getTime()) / 60000);
+    }
+
+    function offsetLabel(minutes){
+      if(minutes === 0) return 'UTC';
+      const sign = minutes >= 0 ? '+' : '-';
+      const abs = Math.abs(minutes);
+      const hours = Math.floor(abs / 60);
+      const mins = abs % 60;
+      return `UTC${sign}${hours}${mins ? ':' + String(mins).padStart(2, '0') : ''}`;
+    }
+
+    function placeLabel(place, now = new Date()){
+      let offset = '';
+      try { offset = offsetLabel(getOffsetMinutes(now, place.zone)); }
+      catch(error) { offset = 'UTC'; }
+      return `${place.name} — ${offset} — ${place.zone}`;
+    }
+
+    function searchTextForPlace(place, now = new Date()){
+      let offset = '';
+      try { offset = offsetLabel(getOffsetMinutes(now, place.zone)); }
+      catch(error) { offset = ''; }
+      return normalizeSearch(`${place.name} ${place.country} ${place.zone} ${offset} ${offset.replace(':','')} ${offset.replace('UTC','UTC ')}`);
+    }
+
+    function populateMainSearch(){
+      const list = document.getElementById('mainZoneOptions');
+      if(!list) return;
+      const now = new Date();
+      list.innerHTML = mainSearchPlaces
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(place => `<option value="${escapeHtml(placeLabel(place, now))}">${escapeHtml(place.country)}</option>`)
+        .join('');
+    }
+
+    function circularOffsetDifference(a, b){
+      const diff = Math.abs(a - b);
+      return Math.min(diff, 1440 - diff);
+    }
+
+    function normaliseOffsetRange(minutes){
+      let value = minutes;
+      while(value < -720) value += 1440;
+      while(value > 840) value -= 1440;
+      return value;
+    }
+
+    function pickDefaultComparePlace(now = new Date()){
+      let localOffset = 0;
+      try { localOffset = getOffsetMinutes(now, localZone); }
+      catch(error) { localOffset = getOffsetMinutes(now, 'Europe/London'); }
+      const targetOffset = normaliseOffsetRange(localOffset - 480);
+
+      let best = null;
+      let bestDiff = Infinity;
+      for(const place of mainSearchPlaces){
+        if(place.zone === localZone) continue;
+        let offset;
+        try { offset = getOffsetMinutes(now, place.zone); }
+        catch(error) { continue; }
+        const diff = circularOffsetDifference(offset, targetOffset);
+        if(diff < bestDiff){
+          best = place;
+          bestDiff = diff;
+        }
+      }
+      return best || mainSearchPlaces.find(place => place.zone === 'America/Los_Angeles') || cities[0];
+    }
+
+    function chooseComparePlace(rawValue){
+      const query = normalizeSearch(rawValue);
+      if(!query) return false;
+      const now = new Date();
+      const exact = mainSearchPlaces.find(place => normalizeSearch(placeLabel(place, now)) === query);
+      const exactName = mainSearchPlaces.find(place => normalizeSearch(place.name) === query || normalizeSearch(place.zone) === query);
+      const partial = mainSearchPlaces.find(place => searchTextForPlace(place, now).includes(query));
+      const match = exact || exactName || partial;
+      if(!match) {
+        document.getElementById('mainSearchNote').textContent = 'No match yet. Try a city name, IANA zone like Asia/Tokyo, or UTC offset like UTC+5:45.';
+        return false;
+      }
+      comparePlace = match;
+      compareIsDefaultBehind = false;
+      const offset = offsetLabel(getOffsetMinutes(now, match.zone));
+      document.getElementById('mainSearch').value = match.name;
+      document.getElementById('mainSearchNote').textContent = `Comparing with ${match.name}, ${match.country} (${offset}).`;
+      updateClocks();
+      return true;
+    }
 
     const captions = {
       sleepy: [
@@ -504,12 +790,31 @@
     function updateClocks(){
       const now = new Date();
       const selectedFilter = filterSelect.value;
-      const londonTime = formatTime(now, 'Europe/London');
-      const londonHour = getParts(now, 'Europe/London').hour;
-      const londonStatus = statusForHour(londonHour);
+      if(!comparePlace) {
+        comparePlace = pickDefaultComparePlace(now);
+        const defaultOffset = offsetLabel(getOffsetMinutes(now, comparePlace.zone));
+        const searchInput = document.getElementById('mainSearch');
+        if(searchInput && !searchInput.value) searchInput.value = comparePlace.name;
+        document.getElementById('mainSearchNote').textContent = `Default comparison: ${comparePlace.name}, ${comparePlace.country} (${defaultOffset}), about 8 hours behind your detected time zone.`;
+      }
 
-      document.getElementById('main-clock').textContent = londonTime;
-      document.getElementById('main-caption').textContent = `In London, you are ${mainCaptionFor(londonStatus)}`;
+      const localTime = formatTime(now, localPlace.zone);
+      const localHour = getParts(now, localPlace.zone).hour;
+      const localStatus = statusForHour(localHour);
+      const localOffset = offsetLabel(getOffsetMinutes(now, localPlace.zone));
+
+      const compareTime = formatTime(now, comparePlace.zone);
+      const compareHour = getParts(now, comparePlace.zone).hour;
+      const compareStatus = statusForHour(compareHour);
+      const compareOffset = offsetLabel(getOffsetMinutes(now, comparePlace.zone));
+
+      document.getElementById('local-label').textContent = `${localPlace.name} time now`;
+      document.getElementById('local-clock').textContent = localTime;
+      document.getElementById('local-caption').textContent = `Your device says ${localPlace.zone} (${localOffset}). You are ${mainCaptionFor(localStatus)}`;
+
+      document.getElementById('compare-label').textContent = compareIsDefaultBehind ? 'About 8 hours behind you' : `${comparePlace.name} time now`;
+      document.getElementById('compare-clock').textContent = compareTime;
+      document.getElementById('compare-caption').textContent = `In ${comparePlace.name}, they are ${mainCaptionFor(compareStatus)} (${compareOffset}).`;
 
       let visibleCount = 0;
       document.querySelectorAll('.city-card').forEach(card => {
@@ -526,10 +831,10 @@
         card.querySelector('.city-caption').textContent = captionFor(city, status);
       });
 
-      const londonLine = `While London is trying to make sense of ${londonTime}, `;
+      const mainLine = `While your clock is trying to make sense of ${localTime}, ${comparePlace.name} is dealing with ${compareTime}. `;
       statement.textContent = visibleCount
-        ? `${londonLine}${visibleCount} places are currently proving that the world is not doing the same thing as you.`
-        : `${londonLine}nobody matched that filter, which is probably a timezone conspiracy.`;
+        ? `${mainLine}${visibleCount} places are currently proving that the world is not doing the same thing as you.`
+        : `${mainLine}nobody matched that filter, which is probably a timezone conspiracy.`;
     }
 
     document.getElementById('shuffleBtn').addEventListener('click', () => {
@@ -544,6 +849,24 @@
     });
 
     filterSelect.addEventListener('change', updateClocks);
+
+    document.getElementById('mainSearchBtn').addEventListener('click', () => {
+      chooseComparePlace(document.getElementById('mainSearch').value);
+    });
+
+    document.getElementById('mainSearch').addEventListener('keydown', event => {
+      if(event.key === 'Enter') {
+        event.preventDefault();
+        chooseComparePlace(event.currentTarget.value);
+      }
+    });
+
+    document.getElementById('mainSearch').addEventListener('change', event => {
+      chooseComparePlace(event.currentTarget.value);
+    });
+
+    populateMainSearch();
+    setInterval(populateMainSearch, 60 * 60 * 1000);
 
     renderCards();
     setInterval(updateClocks, 1000);
